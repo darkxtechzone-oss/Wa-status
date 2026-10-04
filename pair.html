@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot Pairing</title>
+<style>
+  :root { --bg:#0f1419; --card:#1a222c; --text:#e8edf2; --muted:#8b98a5; --accent:#25d366; --err:#ff6b6b; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f2f5f7; --card:#fff; --text:#16202a; --muted:#5b6b79; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .card { width:100%; max-width:420px; background:var(--card); border-radius:16px; padding:24px; box-shadow:0 8px 30px rgba(0,0,0,.25); }
+  h1 { margin:0 0 4px; font-size:1.4rem; }
+  p.sub { margin:0 0 18px; color:var(--muted); font-size:.92rem; }
+  label { font-size:.85rem; color:var(--muted); }
+  input { width:100%; margin:6px 0 14px; padding:14px; font-size:1.05rem; border-radius:10px; border:1px solid #33414f;
+          background:transparent; color:var(--text); outline:none; }
+  input:focus { border-color:var(--accent); }
+  button { width:100%; padding:14px; font-size:1rem; font-weight:600; border:0; border-radius:10px; background:var(--accent); color:#06210f; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:wait; }
+  #result { margin-top:20px; text-align:center; display:none; }
+  #code { font-size:2rem; letter-spacing:.12em; font-weight:700; padding:14px; border-radius:12px; background:rgba(37,211,102,.12); color:var(--accent); user-select:all; }
+  #msg { margin-top:12px; font-size:.9rem; color:var(--muted); line-height:1.5; }
+  #msg.err { color:var(--err); }
+  .copy { margin-top:10px; background:transparent; color:var(--accent); border:1px solid var(--accent); padding:10px; }
+  #state { margin-top:18px; text-align:center; font-size:.85rem; color:var(--muted); }
+  ol { text-align:left; color:var(--muted); font-size:.88rem; padding-left:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🤖 Pairing Code</h1>
+  <p class="sub">Andika number ya WhatsApp utakayounganisha na bot.</p>
+
+  <div id="form">
+    <label for="num">Number (na country code, bila +)</label>
+    <input id="num" type="tel" inputmode="numeric" placeholder="255712345678" autocomplete="tel">
+    <button id="btn">Pata Pairing Code</button>
+  </div>
+
+  <div id="result">
+    <div id="code"></div>
+    <button class="copy" id="copy">Copy code</button>
+    <ol>
+      <li>Fungua WhatsApp kwenye simu hiyo</li>
+      <li>Settings → Linked devices → Link a device</li>
+      <li>Chagua "Link with phone number instead"</li>
+      <li>Weka code hapo juu</li>
+    </ol>
+  </div>
+
+  <div id="msg"></div>
+  <div id="state">Inaangalia hali ya bot...</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const btn = $('btn'), msg = $('msg');
+
+function show(text, err) { msg.textContent = text || ''; msg.className = err ? 'err' : ''; }
+
+btn.onclick = async () => {
+  const number = $('num').value.replace(/\D/g, '');
+  if (number.length < 8) return show('Weka number sahihi pamoja na country code.', true);
+  btn.disabled = true; show('Inatengeneza code, subiri...'); $('result').style.display = 'none';
+  try {
+    const r = await fetch('/api/pair', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ number }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Hitilafu imetokea');
+    $('code').textContent = d.code;
+    $('result').style.display = 'block';
+    show('Weka code hii kwenye WhatsApp ndani ya dakika chache.');
+  } catch (e) { show(e.message, true); }
+  btn.disabled = false;
+};
+
+$('copy').onclick = () => {
+  navigator.clipboard?.writeText($('code').textContent);
+  $('copy').textContent = 'Imecopy ✓';
+  setTimeout(() => $('copy').textContent = 'Copy code', 1500);
+};
+
+async function poll() {
+  try {
+    const d = await (await fetch('/api/status')).json();
+    if (d.registered && d.connected) {
+      $('state').textContent = '✅ Bot imeunganishwa na inafanya kazi';
+      $('form').style.display = 'none'; $('result').style.display = 'none'; show('');
+    } else if (d.registered) {
+      $('state').textContent = '🔄 Inaunganisha...';
+    } else {
+      $('state').textContent = d.ready ? '🟡 Tayari kupair' : '⏳ Bot inaanza...';
+      $('form').style.display = 'block';
+    }
+  } catch { $('state').textContent = 'Server haipatikani'; }
+}
+poll(); setInterval(poll, 3000);
+</script>
+</body>
+</html>

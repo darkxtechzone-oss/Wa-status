@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: wa-status-viewer
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+    # Ukitaka session isidondoke kila redeploy/restart (inahitaji paid plan),
+    # ondoa # kwenye mistari ifuatayo na ubadilishe plan: free -> plan: starter
+    # disk:
+    #   name: session
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # na ongeza env var: SESSION_DIR = /var/data/sessions

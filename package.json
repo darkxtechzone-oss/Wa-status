@@ -1,0 +1,15 @@
+{
+  "name": "wa-status-viewer",
+  "version": "2.0.0",
+  "description": "WhatsApp auto view status bot with web pairing code (Render ready)",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": { "start": "node index.js" },
+  "license": "MIT",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^7.0.0-rc.6",
+    "pino": "^8.17.2"
+  },
+  "engines": { "node": ">=20" }
+}
